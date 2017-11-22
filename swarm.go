@@ -1,6 +1,7 @@
 package disgo
 
 import (
+	"fmt"
 	"net"
 	"sync"
 
@@ -107,18 +108,31 @@ func (s *Swarm) HandleNewConnections(fn func(c net.Conn) bool) *Swarm {
 
 // Kill the worker in the swarm
 func (s *Swarm) Kill(w *Worker) {
+	id := w.ID
+
+	s.Logchan.Info <- "Starting \"kill\" for worker [" + id + "]..."
+
 	s.Mux.Lock()
 	w.Mux.Lock()
 
 	defer func() {
 		s.Mux.Unlock()
 		w.Mux.Unlock()
+		w = nil
 	}()
 
-	delete(s.Workers, w.ID)
-	w.killed <- true
-	w.Conn.Close()
-	w.Conn = nil
+	if _, keyExists := s.Workers[id]; keyExists {
+		delete(s.Workers, id)
+	}
 
-	s.Logchan.Warning <- "Successfully killed worker [" + w.ID + "] and removed from the swarm."
+	close(w.killedWrite)
+	//close(w.killedRead)
+
+	if nil != w.Conn {
+		w.Conn.Close()
+		w.Conn = nil
+	}
+
+	s.Logchan.Warning <- "Successfully killed worker [" + id + "] and removed from the swarm."
+	fmt.Println(s.Workers)
 }
