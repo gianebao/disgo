@@ -1,7 +1,6 @@
 package disgo
 
 import (
-	"fmt"
 	"net"
 	"sync"
 
@@ -12,8 +11,8 @@ import (
 type Swarm struct {
 	Workers       map[string]*Worker
 	NewConnection chan net.Conn
-	ReadData      chan Message
-	WriteData     chan Message
+	reader        func(m Message) string
+	writer        func(m Message) bool
 	Logchan       *log.Channel
 	Mux           sync.Mutex
 }
@@ -28,8 +27,8 @@ func NewSwarm(l *log.Channel) *Swarm {
 	s := &Swarm{
 		Workers:       make(map[string]*Worker),
 		NewConnection: make(chan net.Conn),
-		ReadData:      make(chan Message),
-		WriteData:     make(chan Message),
+		reader:        func(m Message) string { return "" },
+		writer:        func(m Message) bool { return true },
 		Logchan:       l,
 	}
 
@@ -56,36 +55,16 @@ func (s *Swarm) NewWorker(c net.Conn) *Worker {
 	return w
 }
 
-// HandleRead listens to instructions for ReadData channels.
-func (s *Swarm) HandleRead(fn func(m Message) string) *Swarm {
-	go func(s *Swarm) {
-		for {
-			select {
-			// catch all incoming messages. Executed after the the worker.
-			case m := <-s.ReadData:
-				if nil != fn {
-					m.Worker.WriteData <- fn(m)
-				}
-			}
-		}
-	}(s)
+// Reader listens to instructions for ReadData channels.
+func (s *Swarm) Reader(fn func(m Message) string) *Swarm {
+	s.reader = fn
 
 	return s
 }
 
-// HandleWrite listens to instructions for WriteData channels.
-func (s *Swarm) HandleWrite(fn func(m Message) bool) *Swarm {
-	go func(s *Swarm) {
-		for {
-			select {
-			// catch all outgoing messages.
-			case m := <-s.WriteData:
-				if nil != fn && !fn(m) {
-					return
-				}
-			}
-		}
-	}(s)
+// Writer listens to instructions for WriteData channels.
+func (s *Swarm) Writer(fn func(m Message) bool) *Swarm {
+	s.writer = fn
 
 	return s
 }
@@ -125,14 +104,11 @@ func (s *Swarm) Kill(w *Worker) {
 		delete(s.Workers, id)
 	}
 
-	close(w.killedWrite)
-	//close(w.killedRead)
-
 	if nil != w.Conn {
 		w.Conn.Close()
 		w.Conn = nil
 	}
 
+	close(w.killedWrite)
 	s.Logchan.Warning <- "Successfully killed worker [" + id + "] and removed from the swarm."
-	fmt.Println(s.Workers)
 }
