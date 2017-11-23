@@ -120,7 +120,16 @@ func (w *Worker) Die()
 ```
 Die destroys the worker
 
+#### func (*Worker) WriteString
+
+```go
+func (w *Worker) WriteString(s string) *Worker
+```
+WriteString sends a string to the worker
+
 ## Example
+
+Simple example below or a simple chat application [here](https://github.com/gianebao/dgochat).
 
 ```go
   package main

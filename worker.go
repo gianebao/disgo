@@ -54,6 +54,12 @@ func NewWorker(id string, s *Swarm, c net.Conn) *Worker {
 	return w
 }
 
+// WriteString sends a string to the worker
+func (w *Worker) WriteString(s string) *Worker {
+	w.WriteData <- s
+	return w
+}
+
 // buff reads input from connection and forwards to read channel
 func (w *Worker) buff() {
 	var (

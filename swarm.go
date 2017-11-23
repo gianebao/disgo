@@ -19,7 +19,7 @@ type Swarm struct {
 
 // MakeWorkerID creates an ID from net.Addr
 func MakeWorkerID(a net.Addr) string {
-	return a.Network() + "-" + a.String()
+	return a.Network() + "@" + a.String()
 }
 
 // NewSwarm creates a new swarm instance
