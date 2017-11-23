@@ -122,6 +122,7 @@ Die destroys the worker
 
 ## Example
 
+```go
   package main
 
   import (
@@ -179,7 +180,6 @@ Die destroys the worker
   		}
   	}(logchan)
 
-
   	swarm = disgo.NewSwarm(logchan).
   		HandleNewConnections(nil).
   		Reader(func(m disgo.Message) string {
@@ -204,5 +204,6 @@ Die destroys the worker
   		swarm.NewConnection <- conn
   	}
   }
+```
 
 Documentation build by [robertkrimen/godocdown](https://github.com/robertkrimen/godocdown)
